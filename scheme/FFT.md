@@ -51,7 +51,7 @@ $$
 
 matlab中的fft：直接看文档，讲的非常详细。注意fft产生的镜像和fftshift等；
 
-### Cooley-Turkey
+### 1. Cooley-Turkey
 
 **Cooley-Turkey算法推导**
 $$
@@ -88,31 +88,60 @@ X(k+\frac N2)
 ~~~~~~~~~~0\le k \le \frac N2-1
 \end{align}
 $$
-这个东西和傅里叶变换的共轭对称性有没有关系？--->似乎是没有，看胡广书教材p129。
+可以得知, 原有的**N点DFT**可以拆分为$k_1 \in [0, \frac{N}{2}-1]$和$k_2 \in [\frac{N}{2}, N-1]$上下两个半边 ,  通过计算**两段点数为 N/2 点的FFT**  $A(k),B(k), k\in[0, \frac{N}{2}-1]$ , 即可获取N点DFT. 
 
-### bit-reverse原理
+- N点分为 N/2点
+- N/2 点分为 N/4 点
+- N/4 点分为 N/8 点
+- ... 持续分割,直到分割至单点为止.
 
-待补充
-
-末位0，表示偶数，末位1，表示奇数；经过逐级的分解，最后就形成了相应的倒序表示。
-
-> 参考1[离散时间信号处理-奥本海姆](chapter9)
->
-> 参考2 https://www.bilibili.com/video/BV1Y7411W73U/
+==总结==: FFT采用一种递归的思想, 
 
 
 
 
 
-### 计算量分析
+### 2. bit-reverse
 
-暂略
+1. 原理分析
 
+   末位0，表示偶数，末位1，表示奇数；经过逐级的分解，最后就形成了相应的倒序表示。
 
+   > 参考1[离散时间信号处理-奥本海姆](chapter9)
+   >
+   > 参考2 https://www.bilibili.com/video/BV1Y7411W73U/
 
+2. 代码实现
 
+   > 参考1:  https://graphics.stanford.edu/~seander/bithacks.html#BitReverseObvious
+   >
+   > 参考2:  https://www.bilibili.com/video/BV1Y7411W73U/
 
-### 原址计算
+   ```C
+       for (m=1; m<NUM_SAMPLES_M_1; m++) {
+           // swap odd and even bits
+           mr = ((m >> 1) & 0x5555) | ((m & 0x5555) << 1);
+           // swap consecutive pairs
+           mr = ((mr >> 2) & 0x3333) | ((mr & 0x3333) << 2);
+           // swap nibbles ... 
+           mr = ((mr >> 4) & 0x0F0F) | ((mr & 0x0F0F) << 4);
+           // swap bytes
+           mr = ((mr >> 8) & 0x00FF) | ((mr & 0x00FF) << 8);
+           // shift down mr
+           mr >>= SHIFT_AMOUNT ;
+           // don't swap that which has already been swapped
+           if (mr<=m) continue ;
+           // swap the bit-reveresed indices
+           tr = fr[m] ;
+           fr[m] = fr[mr] ;
+           fr[mr] = tr ;
+           ti = fi[m] ;
+           fi[m] = fi[mr] ;
+           fi[mr] = ti ;
+       }
+   ```
+
+### 3. 原址计算
 
 暂略
 
@@ -140,14 +169,19 @@ $$
 
 
 
-### 代码实现
-
-> 参考1 https://www.bilibili.com/video/BV1Y7411W73U/
->
 
 
+### 4. 计算量分析
+
+1. Cooley turkey 算法可以拆分为  $log_{2}N$级, 每一级都需要做N次复数乘法, 所以计算量级别为$Nlog_{2}N$
+2. 最终输出的频率计算结果需要进行倒序操作, 所需时间不超过$nlog_2N$
+3. 总的计算复杂度为 $O(log_2N)$
 
 
+
+##ef
+
+https://vanhunteradams.com/FFT/FFT.html#Exponential-form-of-the-series
 
 
 
